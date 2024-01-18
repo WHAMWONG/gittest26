@@ -27,4 +27,4 @@ module AttachmentService
   end
 end
 
-AttachmentService::ValidateAndStoreFiles.call(attachments: attachments_array, todo: todo_object)
+AttachmentService::ValidateAndStoreFiles.call(attachments: @attachments, todo: @todo)
