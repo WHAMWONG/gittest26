@@ -1,3 +1,4 @@
+
 module AttachmentService
   class ValidateAndStoreFiles
     ACCEPTED_CONTENT_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/svg+xml']
@@ -14,7 +15,8 @@ module AttachmentService
     end
 
     def execute
-      @attachments.each do |file|
+      # Ensure @attachments is not nil before calling each
+      (@attachments || []).each do |file|
         if ACCEPTED_CONTENT_TYPES.include?(file.content_type) && file.size <= MAX_FILE_SIZE
           attachment = Attachment.create!(todo: @todo, file: file)
           @attachment_ids << attachment.id
