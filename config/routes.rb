@@ -1,3 +1,4 @@
+
 require 'sidekiq/web'
 
 Rails.application.routes.draw do
@@ -7,6 +8,12 @@ Rails.application.routes.draw do
   get 'api-docs/v1/swagger.yaml' => 'swagger#yaml'
   # ... other routes ...
 
-  post '/api/todos/:todo_id/categories', to: 'todos#associate_categories'
-  post '/api/todos/:todo_id/tags', to: 'todos#associate_tags'
+  namespace :api do
+    resources :todos, only: [] do
+      post 'categories', to: 'todos#associate_categories', on: :member
+      post 'tags', to: 'todos#associate_tags', on: :member
+    end
+  end
+
+  # ... other routes ...
 end
