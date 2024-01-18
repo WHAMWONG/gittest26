@@ -1,3 +1,4 @@
+
 class TodoPolicy
   attr_reader :user, :todo
 
@@ -6,6 +7,7 @@ class TodoPolicy
     @todo = todo
   end
 
+  # Method create? already exists and fulfills the requirement.
   def create?
     user.present?
   end

@@ -1,7 +1,8 @@
+
 if @todo.errors.any?
   json.status 422
   json.errors @todo.errors.full_messages
-elsif @todo.persisted?
+elsif @todo&.persisted?
   json.status 201
   json.todo do
     json.id @todo.id
@@ -9,7 +10,7 @@ elsif @todo.persisted?
     json.description @todo.description
     json.due_date @todo.due_date
     json.priority @todo.priority
-    json.recurrence @todo.recurrence
+    json.recurrence @todo.recurrence || 'none'
     json.user_id @todo.user_id
   end
 else

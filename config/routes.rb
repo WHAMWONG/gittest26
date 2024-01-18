@@ -12,6 +12,7 @@ Rails.application.routes.draw do
     resources :todos, only: [] do
       post 'categories', to: 'todos#associate_categories', on: :member
       post 'tags', to: 'todos#associate_tags', on: :member
+      post '/', to: 'todos#create'
     end
   end
 

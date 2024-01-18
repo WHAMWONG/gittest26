@@ -1,5 +1,43 @@
 class Api::TodosController < ApplicationController
   before_action :set_todo, only: [:associate_categories, :associate_tags]
+  include TodoService
+  include Pundit::Authorization
+
+  # POST /api/v1/todos
+  def create
+    user_id = request.headers['user_id']
+    validate_params = {
+      title: params[:title],
+      description: params[:description],
+      due_date: params[:due_date],
+      priority: params[:priority],
+      recurrence: params[:recurrence]
+    }
+
+    # Validate the user's ability to create a todo item
+    authorize Todo, policy_class: TodoPolicy
+
+    # Validate the todo item parameters
+    validation_service = TodoService::Validate.new(validate_params, current_user)
+    validation_result = validation_service.call
+
+    if validation_result == true
+      # Create the todo item
+      create_service = TodoService::Create.new(user_id: user_id, **validate_params)
+      service_result = create_service.call
+
+      if service_result[:todo_id]
+        todo = Todo.find(service_result[:todo_id])
+        render json: { status: 201, todo: todo.as_json }, status: :created
+      else
+        render json: { error: service_result[:error] }, status: :unprocessable_entity
+      end
+    else
+      render json: { errors: validation_result }, status: :bad_request
+    end
+  rescue Pundit::NotAuthorizedError
+    render json: { error: 'Unauthorized' }, status: :unauthorized
+  end
 
   # POST /api/todos/:todo_id/categories
   def associate_categories
