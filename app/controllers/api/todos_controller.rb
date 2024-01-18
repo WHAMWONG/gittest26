@@ -1,40 +1,24 @@
 class Api::TodosController < ApplicationController
-  before_action :authenticate_user!
-  before_action :set_todo, only: [:associate_tags]
+  before_action :set_todo, only: [:associate_categories, :associate_tags]
 
-  def create
-    user_id = request.headers['user_id']
-    todo_params = params.permit(:title, :description, :due_date, :priority, :recurrence)
+  # POST /api/todos/:todo_id/categories
+  def associate_categories
+    category_id = params.require(:category_id)
 
-    validation_service = TodoService::Validate.new(todo_params, current_user)
-    validation_result = validation_service.call
+    result = TodoService::AssociateCategories.new(@todo.id, [category_id]).call
 
-    if validation_result == true
-      create_service = TodoService::Create.new(
-        user_id: user_id,
-        title: todo_params[:title],
-        description: todo_params[:description],
-        due_date: todo_params[:due_date],
-        priority: todo_params[:priority],
-        recurrence: todo_params[:recurrence]
-      )
-
-      result = create_service.call
-
-      if result[:todo_id]
-        render json: { status: 201, todo: Todo.find(result[:todo_id]) }, status: :created
-      else
-        render json: { error: result[:error] }, status: :unprocessable_entity
-      end
+    if result[:association_status]
+      render json: {
+        status: 201,
+        todo_category: {
+          todo_id: @todo.id,
+          category_id: category_id
+        }
+      }, status: :created
     else
-      render json: { errors: validation_result }, status: :bad_request
+      error_message = result[:error]
+      render json: { error: error_message }, status: error_status(error_message)
     end
-  rescue Pundit::NotAuthorizedError
-    render json: { error: 'User is not authorized to create a todo item.' }, status: :unauthorized
-  rescue ActiveRecord::RecordNotFound
-    render json: { error: 'User not found.' }, status: :not_found
-  rescue StandardError => e
-    render json: { error: e.message }, status: :internal_server_error
   end
 
   # POST /api/todos/:todo_id/tags
@@ -55,12 +39,9 @@ class Api::TodosController < ApplicationController
 
   private
 
-  def authenticate_user!
-    # This method should handle user authentication
-  end
-
   def set_todo
-    @todo = Todo.find(params[:todo_id])
+    @todo = Todo.find_by(id: params[:todo_id])
+    render json: { error: 'Todo item not found.' }, status: :not_found unless @todo
   end
 
   def tag_params
@@ -69,10 +50,10 @@ class Api::TodosController < ApplicationController
 
   def error_status(error_message)
     case error_message
-    when 'Todo not found.', 'Tag not found.'
+    when 'Todo not found', 'Category not found', 'Todo not found.', 'Tag not found.'
       :not_found
     else
-      :unprocessable_entity
+      :internal_server_error
     end
   end
 end
